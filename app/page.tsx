@@ -441,7 +441,7 @@ export default function Page() {
 
               <div className="flex items-center justify-between py-[14px] border-t border-b border-brown/10">
                 <span className="text-sm text-brown/45 font-light">
-                  Unlocks Mar 13 at 8:00 PM
+                  Unlocks Mar 13 at 7:00 PM
                 </span>
               </div>
             </div>

@@ -354,7 +354,7 @@ export default function Page() {
                 <div className="flex gap-2">
                   <button
                     type="submit"
-                    className="flex-1 px-3 py-2 text-sm bg-brown text-white rounded-md hover:bg-brown/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-3 py-2 text-sm bg-brown text-brown rounded-md hover:bg-brown/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={isLockedOut || isSubmitting.current || !password}
                   >
                     {isSubmitting.current ? 'Checking...' : 'Unlock'}

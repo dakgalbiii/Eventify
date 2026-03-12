@@ -8,10 +8,11 @@ import ScheduleTab from "./components/tabs/ScheduleTab";
 import RulesTab from "./components/tabs/RulesTab";
 import GroupsTab from "./components/tabs/GroupsTab";
 import InfoTab from "./components/tabs/InfoTab";
+import { Check, Circle } from "lucide-react";
 
 type Tab = "home" | "schedule" | "rules" | "groups" | "info";
 
-const UNLOCK_DATE = new Date("2026-03-13T19:00:00");
+const UNLOCK_DATE = new Date("2026-03-13T20:00:00");
 const PASSWORD_HASH = btoa("PMTisKindaChinese");
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes in milliseconds
@@ -21,7 +22,23 @@ const STORAGE_KEYS = {
   AUTHENTICATED: 'retreat_auth',
   ATTEMPTS: 'retreat_attempts',
   LOCKOUT_UNTIL: 'retreat_lockout',
+  PACKING_LIST: 'retreat_packing_list',
 };
+
+// Packing list items
+const PACKING_ITEMS = [
+  { id: "bible", label: "Bible (physical ones are preferred)" },
+  { id: "journal", label: "Journal" },
+  { id: "pen", label: "Pen/pencil" },
+  { id: "water", label: "Reusable water bottle (limited plastic bottles available)" },
+  { id: "toiletries", label: "Toiletries/medications" },
+  { id: "sleeping", label: "Sleeping bag/pillow", optional: true },
+  { id: "towel", label: "Towel" },
+  { id: "slippers", label: "Slippers and/or shower slippers" },
+  { id: "sneakers", label: "Sneakers and activewear (for games)" },
+  { id: "money", label: "Spending money (for meals on the way there/back with your car)" },
+  { id: "snacks", label: "OPTIONAL: snacks for your car rides & your lovely drivers", optional: true },
+];
 
 export default function Page() {
   const [tab, setTab] = useState<Tab>("home");
@@ -34,6 +51,10 @@ export default function Page() {
   const [attempts, setAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
+  
+  // Packing list state
+  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [showPackingList, setShowPackingList] = useState(false);
 
   // Refs to prevent multiple submissions
   const isSubmitting = useRef(false);
@@ -70,6 +91,17 @@ export default function Page() {
       }
     }
 
+    // Load packing list state
+    const savedPacking = localStorage.getItem(STORAGE_KEYS.PACKING_LIST);
+    if (savedPacking) {
+      try {
+        const parsed = JSON.parse(savedPacking);
+        setCheckedItems(new Set(parsed));
+      } catch (e) {
+        console.error('Failed to parse saved packing list:', e);
+      }
+    }
+
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
@@ -99,6 +131,14 @@ export default function Page() {
     }
   }, [lockoutUntil, mounted]);
 
+  // Persist packing list
+  useEffect(() => {
+    if (mounted) {
+      const array = Array.from(checkedItems);
+      localStorage.setItem(STORAGE_KEYS.PACKING_LIST, JSON.stringify(array));
+    }
+  }, [checkedItems, mounted]);
+
   // Check lockout status
   useEffect(() => {
     if (lockoutUntil && new Date() > lockoutUntil) {
@@ -120,10 +160,8 @@ export default function Page() {
     }
   }
 
-  // Sanitize input to prevent injection - MODIFIED to allow copy-paste
+  // Sanitize input to prevent injection
   const sanitizeInput = (input: string): string => {
-    // Remove only obviously malicious characters but keep normal text
-    // This allows pasting of the full password
     return input.replace(/[<>{}()\[\]\\]/g, '').trim();
   };
 
@@ -141,7 +179,7 @@ export default function Page() {
       return;
     }
 
-    // Sanitize input - but keep the full pasted content
+    // Sanitize input
     const sanitizedPassword = sanitizeInput(password);
 
     // Check if password is empty after sanitization
@@ -205,11 +243,24 @@ export default function Page() {
     localStorage.removeItem(STORAGE_KEYS.LOCKOUT_UNTIL);
   }, []);
 
+  // Packing list functions
+  const toggleItem = (id: string) => {
+    setCheckedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
   if (!mounted) return null;
 
   const isLocked = now < UNLOCK_DATE && !isAuthenticated;
 
-  // ── Pre-retreat lock screen — same layout as HomeTab ──
+  // ── Pre-retreat lock screen — with packing list ──
   if (isLocked) {
     const diffMs = UNLOCK_DATE.getTime() - now.getTime();
 
@@ -255,11 +306,14 @@ export default function Page() {
       }
     };
 
-    return (
-      <div className="max-w-lg mx-auto flex flex-col justify-between min-h-dvh px-7 pt-16 pb-10">
+    const totalItems = PACKING_ITEMS.length;
+    const completedCount = checkedItems.size;
+    const progress = (completedCount / totalItems) * 100;
 
-        {/* Top — mirrors HomeTab top block */}
-        <div className="fade-up delay-1 mb-2">
+    return (
+      <div className="max-w-lg mx-auto flex flex-col min-h-dvh px-7 pt-16 pb-10">
+        {/* Top section */}
+        <div className="fade-up delay-1">
           <p className="text-[10px] tracking-widest2 uppercase text-brown/35 mb-8">
             KCF · Mar 13-15, 2026
           </p>
@@ -280,114 +334,190 @@ export default function Page() {
               priority
             />
           </div>
-
-          <span className="text-[14px] text-brown/45 leading-relaxed font-light">
-            "But seek first his kingdom and his righteousness, and all these things will be given to you."
-            <br />Matthew 6:33
-          </span>
         </div>
 
-        {/* Bottom — countdown in place of nav links, same border style */}
-        <div className="fade-up delay-3 flex flex-col">
-          <div className="flex items-center justify-between py-[14px] border-t border-brown/10">
-            <span className="text-sm text-brown/80">
-              Available in
-            </span>
-            {getCountdownDisplay()}
+        {/* Toggle between countdown and packing list */}
+        <div className="fade-up delay-2 mt-4">
+          <div className="flex gap-2 mb-4 ">
+            <button
+              onClick={() => setShowPackingList(false)}
+              className={`flex-1 py-2 text-xs uppercase tracking-widest rounded-lg transition-all ${
+                !showPackingList 
+                  ? 'bg-brown text-paper font-medium' 
+                  : 'text-brown/30 hover:text-brown/50'
+              }`}
+            >
+              Countdown
+            </button>
+            <button
+              onClick={() => setShowPackingList(true)}
+              className={`flex-1 py-2 text-xs uppercase tracking-widest rounded-lg transition-all ${
+                showPackingList 
+                  ? 'bg-brown text-paper font-medium' 
+                  : 'text-brown/30 hover:text-brown/50'
+              }`}
+            >
+              Packing List
+            </button>
           </div>
 
-          {/* Password protection section */}
-          {!showPasswordInput ? (
-            <button
-              onClick={() => {
-                setShowPasswordInput(true);
-                // Focus input after render
-                setTimeout(() => inputRef.current?.focus(), 100);
-              }}
-              className="flex items-center justify-between py-[14px] border-t border-brown/10 w-full hover:bg-brown/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLockedOut}
-            >
-              <span className="text-sm text-brown/80">
-                {isLockedOut ? 'Locked out' : 'Already have access?'}
-              </span>
-              <span className="text-sm text-brown font-medium">
-                {isLockedOut ? 'Nice try...' : 'Enter password →'}
-              </span>
-            </button>
+          {!showPackingList ? (
+            /* Countdown View */
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between py-[14px] border-t border-brown/10">
+                <span className="text-sm text-brown/80">
+                  Available in
+                </span>
+                {getCountdownDisplay()}
+              </div>
+
+              {/* Password protection section */}
+              {!showPasswordInput ? (
+                <button
+                  onClick={() => {
+                    setShowPasswordInput(true);
+                    setTimeout(() => inputRef.current?.focus(), 100);
+                  }}
+                  className="flex items-center justify-between py-[14px] border-t border-brown/10 w-full hover:bg-brown/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isLockedOut}
+                >
+                  <span className="text-sm text-brown/80">
+                    {isLockedOut ? 'Locked out' : 'Already have access?'}
+                  </span>
+                  <span className="text-sm text-brown font-medium">
+                    {isLockedOut ? 'Nice try...' : 'Enter password →'}
+                  </span>
+                </button>
+              ) : (
+                <form onSubmit={handlePasswordSubmit} className="py-[14px] border-t border-brown/10">
+                  <div className="flex flex-col gap-2">
+                    <input
+                      ref={inputRef}
+                      type="password"
+                      value={password}
+                      onChange={(e) => {
+                        const sanitized = sanitizeInput(e.target.value).slice(0, 50);
+                        setPassword(sanitized);
+                        setError("");
+                      }}
+                      onPaste={(e) => {}}
+                      onKeyDown={(e) => {
+                        if (e.key === '<' || e.key === '>' || e.key === '{' || e.key === '}') {
+                          e.preventDefault();
+                        }
+                      }}
+                      placeholder="Enter password"
+                      className="w-full px-3 py-2 text-sm border border-brown/20 rounded-md focus:outline-none focus:border-brown/40 disabled:opacity-50"
+                      disabled={isLockedOut || isSubmitting.current}
+                      maxLength={50}
+                      autoComplete="off"
+                    />
+                    {error && <p className="text-xs text-red-500">{error}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className="flex-1 px-3 py-2 text-sm bg-brown text-white rounded-md hover:bg-brown/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLockedOut || isSubmitting.current || !password}
+                      >
+                        {isSubmitting.current ? 'Checking...' : 'Unlock'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPasswordInput(false);
+                          setPassword("");
+                          setError("");
+                          isSubmitting.current = false;
+                        }}
+                        className="px-3 py-2 text-sm border border-brown/20 rounded-md hover:bg-brown/5 transition-colors disabled:opacity-50"
+                        disabled={isSubmitting.current}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              <div className="flex items-center justify-between py-[14px] border-t border-b border-brown/10">
+                <span className="text-sm text-brown/45 font-light">
+                  Unlocks Mar 13 at 8:00 PM
+                </span>
+              </div>
+            </div>
           ) : (
-            <form onSubmit={handlePasswordSubmit} className="py-[14px] border-t border-brown/10">
-              <div className="flex flex-col gap-2">
-                <input
-                  ref={inputRef}
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    // Allow paste by not sanitizing on every keystroke
-                    // Just do basic sanitization but keep the text
-                    const value = e.target.value;
-                    // Only remove truly malicious characters
-                    const sanitized = value.replace(/[<>{}()\[\]\\]/g, '');
-                    setPassword(sanitized);
-                    setError(""); // Clear error on input change
-                  }}
-                  onPaste={(e) => {
-                    // Allow paste events - no prevention
-                    // The onChange will handle the sanitization
-                  }}
-                  onKeyDown={(e) => {
-                    // Only block specific keys that could be used for injection
-                    // Allow Ctrl+V (paste), Cmd+V, etc.
-                    if (e.key === '<' || e.key === '>' || e.key === '{' || e.key === '}') {
-                      e.preventDefault();
-                    }
-                  }}
-                  placeholder="Enter password"
-                  className="w-full px-3 py-2 text-sm border border-brown/20 rounded-md focus:outline-none focus:border-brown/40 disabled:opacity-50"
-                  disabled={isLockedOut || isSubmitting.current}
-                  maxLength={50}
-                  autoComplete="off"
-                  spellCheck="false"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                />
-                {error && <p className="text-xs text-red-500">{error}</p>}
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="flex-1 px-3 py-2 text-sm bg-brown text-brown rounded-md hover:bg-brown/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isLockedOut || isSubmitting.current || !password}
-                  >
-                    {isSubmitting.current ? 'Checking...' : 'Unlock'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPasswordInput(false);
-                      setPassword("");
-                      setError("");
-                      isSubmitting.current = false;
-                    }}
-                    className="px-3 py-2 text-sm border border-brown/20 rounded-md hover:bg-brown/5 transition-colors disabled:opacity-50"
-                    disabled={isSubmitting.current}
-                  >
-                    Cancel
-                  </button>
+            /* Packing List View */
+            <div className="flex flex-col py-4">
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-brown mb-2">What to Pack</h3>
+                
+                {/* Progress bar */}
+                <div className="mt-3 mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs text-brown/40">
+                      {completedCount} of {totalItems} items packed
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-brown/10 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gold rounded-full transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Packing list items */}
+                <div className="space-y-2 pr-2">
+                  {PACKING_ITEMS.map((item) => {
+                    const isChecked = checkedItems.has(item.id);
+                    
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => toggleItem(item.id)}
+                        className="w-full flex items-start gap-3 p-2 rounded-lg transition-all duration-200 hover:bg-brown/5"
+                      >
+                        <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors duration-200 ${
+                          isChecked 
+                            ? 'bg-gold border-gold' 
+                            : 'border-brown/30'
+                        }`}>
+                          {isChecked && <Check size={12} className="text-paper" />}
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className={`text-xs transition-all duration-200 ${
+                            isChecked 
+                              ? 'text-brown/40 line-through' 
+                              : 'text-brown'
+                          }`}>
+                            {item.label}
+                          </p>
+                          {item.optional && (
+                            <span className="text-[8px] text-brown/30 uppercase tracking-wider mt-1 inline-block">
+                              Optional
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Footer note */}
+                <div className="mt-6 p-3 bg-brown/5 rounded-lg">
+                  <p className="text-[10px] text-brown/40 leading-relaxed text-center">
+                    ✓ Your checklist is saved automatically
+                  </p>
                 </div>
               </div>
-            </form>
+            </div>
           )}
-
-          <div className="flex items-center justify-between py-[14px] border-t border-b border-brown/10">
-            <span className="text-sm text-brown/45 font-light">
-              Unlocks Mar 13 at 7:00 PM
-            </span>
-          </div>
         </div>
       </div>
     );
   }
 
-  // ── Main app with additional security ──
+  // ── Main app ──
   return (
     <div className="max-w-lg mx-auto min-h-screen relative">
       <main key={tab}>

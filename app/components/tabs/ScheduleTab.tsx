@@ -229,7 +229,7 @@ export default function ScheduleTab() {
           <div className="flex-1 h-px" style={{ background: "rgba(44,26,14,0.07)" }} />
         </div>
 
-        <div className="space-y-[6px]">
+        <div className="space-y-1.5">
           {day.items.map((item, i) => {
             const cat        = getCat(item.title);
             const colors     = CATEGORY[cat];
@@ -255,7 +255,7 @@ export default function ScheduleTab() {
               >
                 {/* Time */}
                 <div
-                  className="w-[96px] shrink-0 px-3 py-3 flex flex-col justify-center"
+                  className="w-24 shrink-0 px-3 py-3 flex flex-col justify-center"
                   style={{ borderRight: `1px solid ${colors.border}22` }}
                 >
                   <span className="text-[9px] tabular-nums leading-relaxed" style={{ color: colors.text + "bb" }}>
@@ -270,12 +270,10 @@ export default function ScheduleTab() {
                       <span className="text-[12px] font-medium truncate leading-tight" style={{ color: colors.text }}>
                         {item.title}
                       </span>
-                      {item.highlight && (
-                        <span className="text-[8px] shrink-0" style={{ color: "#b8872a" }}>✦</span>
-                      )}
+                      
                     </div>
                     {item.subtitle && (
-                      <p className="text-[10px] mt-[2px] leading-snug" style={{ color: colors.text + "88" }}>
+                      <p className="text-[10px] mt-0.5 leading-snug" style={{ color: colors.text + "88" }}>
                         {item.subtitle}
                       </p>
                     )}

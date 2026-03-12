@@ -120,9 +120,11 @@ export default function Page() {
     }
   }
 
-  // Sanitize input to prevent injection
+  // Sanitize input to prevent injection - MODIFIED to allow copy-paste
   const sanitizeInput = (input: string): string => {
-    return input.replace(/[<>{}()\[\]\/\\]/g, '').trim();
+    // Remove only obviously malicious characters but keep normal text
+    // This allows pasting of the full password
+    return input.replace(/[<>{}()\[\]\\]/g, '').trim();
   };
 
   const handlePasswordSubmit = useCallback((e: React.FormEvent) => {
@@ -139,7 +141,7 @@ export default function Page() {
       return;
     }
 
-    // Sanitize input
+    // Sanitize input - but keep the full pasted content
     const sanitizedPassword = sanitizeInput(password);
 
     // Check if password is empty after sanitization
@@ -271,8 +273,10 @@ export default function Page() {
             <Image
               src="/running.png"
               alt="The Kingdom"
-              width={350}
-              height={250}
+              width={0}
+              height={0}
+              sizes="100vw"
+              className="w-full h-auto max-w-[350px]"
               priority
             />
           </div>
@@ -318,12 +322,21 @@ export default function Page() {
                   type="password"
                   value={password}
                   onChange={(e) => {
-                    // Limit input length and sanitize
-                    const sanitized = sanitizeInput(e.target.value).slice(0, 50);
+                    // Allow paste by not sanitizing on every keystroke
+                    // Just do basic sanitization but keep the text
+                    const value = e.target.value;
+                    // Only remove truly malicious characters
+                    const sanitized = value.replace(/[<>{}()\[\]\\]/g, '');
                     setPassword(sanitized);
+                    setError(""); // Clear error on input change
+                  }}
+                  onPaste={(e) => {
+                    // Allow paste events - no prevention
+                    // The onChange will handle the sanitization
                   }}
                   onKeyDown={(e) => {
-                    // Prevent common injection keys
+                    // Only block specific keys that could be used for injection
+                    // Allow Ctrl+V (paste), Cmd+V, etc.
                     if (e.key === '<' || e.key === '>' || e.key === '{' || e.key === '}') {
                       e.preventDefault();
                     }
@@ -333,6 +346,9 @@ export default function Page() {
                   disabled={isLockedOut || isSubmitting.current}
                   maxLength={50}
                   autoComplete="off"
+                  spellCheck="false"
+                  autoCapitalize="none"
+                  autoCorrect="off"
                 />
                 {error && <p className="text-xs text-red-500">{error}</p>}
                 <div className="flex gap-2">

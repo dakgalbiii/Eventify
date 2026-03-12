@@ -1,26 +1,59 @@
+@import url('https://fonts.cdnfonts.com/css/neue-haas-grotesk-display-pro');
+
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #f2ede4;
+    --brown: #594334;
+    --brown-mid: rgba(44,26,14,0.45);
+    --brown-faint: rgba(44,26,14,0.10);
+    --gold: #b8872a;
+  }
+
+  html, body {
+    background-color: var(--paper);
+    color: var(--brown);
+    font-family: 'Neue Haas Grotesk Display Pro', sans-serif;
+    overscroll-behavior: none;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background: var(--brown);
+    color: var(--paper);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up          { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+.delay-1          { animation-delay: 0.04s; }
+.delay-2          { animation-delay: 0.10s; }
+.delay-3          { animation-delay: 0.16s; }
+.delay-4          { animation-delay: 0.22s; }
+
+.leaflet-container {
+  font-family: inherit;
+}
+
+.leaflet-popup-content {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #4a3b2c;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }

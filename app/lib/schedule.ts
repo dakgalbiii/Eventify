@@ -16,9 +16,8 @@ export const schedule: ScheduleDay[] = [
     day: "Friday",
     date: "Mar 13",
     items: [
-      { time: "3:00-5:00pm", title: "Arrive at Retreat Center" },
-      { time: "5:00-6:00pm", title: "Room Assignments" },
-      { time: "6:00-7:00pm", title: "Dinner" },
+      { time: "3:00-6:00pm", title: "Arrive at Retreat Center" },
+      { time: "6:00-7:00pm", title: "Check-in / Room Assignments" },
       { time: "7:00-7:30pm", title: "Icebreakers / Orientation" },
       { time: "7:30-8:00pm", title: "Slight Downtime / Serving Team Prayer" },
       { time: "8:00-10:00pm", title: "Session No. 1", highlight: true },
